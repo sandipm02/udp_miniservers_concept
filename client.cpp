@@ -16,12 +16,13 @@ void menu();
 int socket_desc;
 struct sockaddr_in server;
 char *serverResp[2000];
+string inputOption;
 
 int main(int argc, char *argv[])
 {
     while (1)
     {
-        string inputOption;
+        // Init Program
         menu();
         printf("\033[0mPlease Input a Menu Option: ");
         cin >> inputOption;
@@ -30,42 +31,53 @@ int main(int argc, char *argv[])
             printf("\033[0mInvalid Menu Option: ");
             cin >> inputOption;
         }
+
+        // Options
         if (inputOption == "4")
         {
             exit(1);
         }
+
+
         if (inputOption == "1")
         {
-            char *one = "one";
+            string word;
+            string num = "o";
+            printf("\nEnter an English word: ");
+            cin >> word;
+            word = num + word;
+            const char *str = word.c_str();
             createSocket();
-            if (send(socket_desc, one, strlen(one), 0) < 0)
+            if (send(socket_desc, str, strlen(str), 0) < 0)
             {
-                puts("Send failed");
+                puts("\033[1;31mRequest Send Failed\033[0m\n");
                 exit(1);
             }
             else
             {
-                puts("success sending bruh");
+                puts("\033[1;32mRequest Sent Succesfully\033[0m");
             }
             if (recv(socket_desc, serverResp, 2000, 0) < 0)
             {
                 exit(1);
             }
-            puts("Reply received\n");
-            printf("%s", serverResp);
+            printf("French translation: %s\n", serverResp);
         }
+
+
+
         if (inputOption == "2")
         {
-            char *two = "two";
+            char *two = "2";
             createSocket();
             if (send(socket_desc, two, strlen(two), 0) < 0)
             {
-                puts("Send failed");
+                puts("\033[1;31mRequest Send Failed\033[0m\n");
                 exit(1);
             }
             else
             {
-                puts("success sending bruh");
+                puts("\033[1;32mRequest Sent Succesfully\033[0m");
             }
             if (recv(socket_desc, serverResp, 2000, 0) < 0)
             {
@@ -74,18 +86,21 @@ int main(int argc, char *argv[])
             puts("Reply received\n");
             printf("%s", serverResp);
         }
+
+
+
         if (inputOption == "3")
         {
             char *thr = "thr";
             createSocket();
             if (send(socket_desc, thr, strlen(thr), 0) < 0)
             {
-                puts("Send failed");
+                puts("\033[1;31mRequest Send Failed\033[0m\n");
                 exit(1);
             }
             else
             {
-                puts("success sending bruh");
+                puts("\033[1;32mRequest Sent Succesfully\033[0m");
             }
             if (recv(socket_desc, serverResp, 2000, 0) < 0)
             {
@@ -95,6 +110,8 @@ int main(int argc, char *argv[])
             printf("%s", serverResp);
         }
     }
+
+    
     return 0;
 }
 

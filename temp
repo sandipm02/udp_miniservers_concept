@@ -1,89 +1,120 @@
-#include <stdio.h>
-#include <string.h> //strlen
-#include <sys/socket.h>
-#include <arpa/inet.h> //inet_addr
-#include <unistd.h>    //write
+#include <iostream>		// For cerr and cout
+#include <cstdlib>		// For atoi()
+#include <sys/types.h>	// For data types
+#include <sys/socket.h> // For socket(), connect(), send(), and recv()
+#include <netdb.h>		// For gethostbyname()
+#include <arpa/inet.h>	// For inet_addr()
+#include <unistd.h>		// For close()
+#include <netinet/in.h> // For sockaddr_in
+#include <string.h>		// strcmp
 
-void ReadXBytes(int socket, unsigned int x, void *buffer)
+// functions
+#define BUFSIZE 256
+using namespace std;
+
+void print_buffer(string action, char buffer[], size_t bytes)
 {
-    int bytesRead = 0;
-    int result;
-    while (bytesRead < x)
-    {
-        result = read(socket, buffer + bytesRead, x - bytesRead);
-        if (result < 1)
-        {
-            // Throw your error.
-        }
-
-        bytesRead += result;
-    }
+	printf("%s: %s (%ld bytes)\n", action.c_str(), buffer, bytes);
 }
 
 int main(int argc, char *argv[])
 {
-    int socket_desc, new_socket, c;
-    struct sockaddr_in server, client;
-    char *message;
-    char *server_reply;
+	int socket_desc, new_socket, c, read_size;
+	struct sockaddr_in server, client;
+	char *message;
+	char client_message[2000];
+	char *server_reply;
 
-    //Create socket
-    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
-    if (socket_desc == -1)
-    {
-        printf("Could not create socket");
-    }
+	//Create socket
+	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+	if (socket_desc == -1)
+	{
+		printf("Could not create socket");
+	}
+	//Prepare the sockaddr_in structure
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(8881);
+	//Bind
+	if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
+	{
+		puts("bind failed");
+		return 1;
+	}
+	puts("bind done");
+	//Listen
+	listen(socket_desc, 3);
+	//Accept and incoming connection
+	puts("Waiting for incoming connections...");
+	c = sizeof(struct sockaddr_in);
+	while (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c))
+	{
+		puts("Connection accepted");
 
-    //Prepare the sockaddr_in structure
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons(8888);
+		if ((read_size = recv(new_socket, client_message, 2000, 0)) > 0)
+		{
+			if (client_message[0] == 'o')
+			{
+				puts("Option 1 Selected -> Translator");
 
-    //Bind
-    if (bind(socket_desc, (struct sockaddr *)&server, sizeof(server)) < 0)
-    {
-        puts("bind failed");
-        return 1;
-    }
-    puts("bind done");
 
-    //Listen
-    listen(socket_desc, 3);
 
-    //Accept and incoming connection
-    puts("Waiting for incoming connections...");
-    c = sizeof(struct sockaddr_in);
-    while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t *)&c)))
-    {
-        puts("Connection accepted");
-        unsigned int length = 0;
-        char *buffer = 0;
-        // we assume that sizeof(length) will return 4 here.
-        ReadXBytes(socket_desc, sizeof(length), (void *)(&length));
-        buffer = new char[length];
-        ReadXBytes(socket_desc, length, (void *)buffer);
 
-        // Then process the data as needed.
 
-        delete[] buffer;
-        puts(server_reply);
-        if (server_reply == "one")
-        {
-            message = "Option 1 Selected\n";
-            write(new_socket, message, strlen(message));
-        }
-        else
-        {
-            message = "Error!\n";
-            write(new_socket, message, strlen(message));
-        }
-        //Reply to the client
-    }
-    if (new_socket < 0)
-    {
-        perror("accept failed");
-        return 1;
-    }
 
-    return 0;
+				struct addrinfo hints, *server_info;
+				memset(&hints, 0, sizeof hints);
+				hints.ai_family = AF_INET; // set to AF_INET6 to use IPv6
+				hints.ai_socktype = SOCK_DGRAM;
+				if ((getaddrinfo("127.0.0.1", "2000", &hints, &server_info)) != 0)
+				{
+					fprintf(stderr, "getaddrinfo() failed.\n");
+					return 1;
+				}
+
+				// loop through all the results and make a socket
+				int sockfd = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+
+				size_t numbytes;
+				while (true)
+				{
+					string msg;
+					cout << "\nEnter a message (0 for exit): ";
+					cin >> msg;
+					char buffer[BUFSIZE];
+					memset(buffer, 0, sizeof(buffer));
+					strcpy(buffer, msg.c_str());
+					if (!strcmp(buffer, "0"))
+						break;
+
+					if ((numbytes = sendto(sockfd, buffer, strlen(buffer), 0, server_info->ai_addr, server_info->ai_addrlen)) == -1)
+					{
+						perror("sendto() failed");
+						exit(1);
+					}
+					printf("sent %d bytes to %s\n", numbytes, argv[1]);
+				}
+				close(sockfd);
+
+
+
+
+
+
+				write(new_socket, client_message, strlen(client_message));
+			}
+
+			else if (client_message[0] == 't' && client_message[1] == 'w')
+			{
+				puts("Option 2 Selected -> Currency Convertor");
+				write(new_socket, client_message, strlen(client_message));
+			}
+			else
+			{
+				puts("Option 3 Selected -> Voting");
+				write(new_socket, client_message, strlen(client_message));
+			}
+		}
+	}
+	return 0;
 }
